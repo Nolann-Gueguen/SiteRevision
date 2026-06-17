@@ -3,3 +3,5 @@ dist/
 .DS_Store
 *.local
 server/*.db
+server/*.db-shm
+server/*.db-wal
