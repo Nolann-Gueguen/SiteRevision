@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { BookOpen, Lock, User, Eye, EyeOff, AlertCircle } from 'lucide-react'
+import { BookOpen, Lock, User, Eye, EyeOff, AlertCircle, UserPlus, LogIn } from 'lucide-react'
 import './LoginPage.css'
 
 export default function LoginPage() {
-  const { login } = useAuth()
+  const { login, register } = useAuth()
+  const [mode, setMode] = useState('login') // 'login' | 'register'
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPwd, setShowPwd] = useState(false)
@@ -15,11 +16,17 @@ export default function LoginPage() {
     e.preventDefault()
     setError('')
     setLoading(true)
-    await new Promise(r => setTimeout(r, 400))
-    const ok = login(username.trim(), password)
-    if (!ok) setError('Identifiants incorrects. Réessayez.')
-    setLoading(false)
+    try {
+      if (mode === 'login') await login(username.trim(), password)
+      else await register(username.trim(), password)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
+
+  const switchMode = (m) => { setMode(m); setError(''); setUsername(''); setPassword('') }
 
   return (
     <div className="login-bg">
@@ -46,9 +53,28 @@ export default function LoginPage() {
 
       <div className="login-right">
         <div className="login-card">
+          <div className="login-tabs">
+            <button
+              className={`login-tab ${mode === 'login' ? 'active' : ''}`}
+              onClick={() => switchMode('login')}
+            >
+              <LogIn size={15} /> Connexion
+            </button>
+            <button
+              className={`login-tab ${mode === 'register' ? 'active' : ''}`}
+              onClick={() => switchMode('register')}
+            >
+              <UserPlus size={15} /> Créer un compte
+            </button>
+          </div>
+
           <div className="login-card-header">
-            <h2>Connexion</h2>
-            <p>Entrez vos identifiants pour accéder à votre espace.</p>
+            <h2>{mode === 'login' ? 'Bon retour !' : 'Nouveau compte'}</h2>
+            <p>
+              {mode === 'login'
+                ? 'Entrez vos identifiants pour accéder à votre espace.'
+                : 'Choisissez un identifiant et un mot de passe pour commencer.'}
+            </p>
           </div>
 
           <form className="login-form" onSubmit={handleSubmit}>
@@ -68,7 +94,7 @@ export default function LoginPage() {
             </div>
 
             <div className="login-field">
-              <label>Mot de passe</label>
+              <label>Mot de passe {mode === 'register' && <span className="field-hint">4 caractères min.</span>}</label>
               <div className="login-input-wrap">
                 <Lock size={16} className="input-icon" />
                 <input
@@ -76,7 +102,7 @@ export default function LoginPage() {
                   placeholder="Votre mot de passe"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  autoComplete="current-password"
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                 />
                 <button type="button" className="pwd-toggle" onClick={() => setShowPwd(v => !v)}>
                   {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -91,15 +117,12 @@ export default function LoginPage() {
               </div>
             )}
 
-            <button type="submit" className="login-btn" disabled={loading || !username || !password}>
-              {loading ? <span className="login-spinner" /> : 'Se connecter'}
+            <button type="submit" className="login-btn" disabled={loading || !username.trim() || !password}>
+              {loading
+                ? <span className="login-spinner" />
+                : mode === 'login' ? 'Se connecter' : 'Créer mon compte'}
             </button>
           </form>
-
-          <div className="login-hint">
-            <p>Identifiant par défaut : <code>admin</code></p>
-            <p>Mot de passe par défaut : <code>studyspace2024</code></p>
-          </div>
         </div>
       </div>
     </div>

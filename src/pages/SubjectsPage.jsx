@@ -1,13 +1,15 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { SUBJECTS, getCourses } from '../utils/storage'
+import { SUBJECTS } from '../utils/storage'
+import { api } from '../api'
+import { useData } from '../hooks/useData'
 import SubjectIcon from '../components/SubjectIcon'
 import { Plus } from 'lucide-react'
 import './SubjectsPage.css'
 
 export default function SubjectsPage() {
   const navigate = useNavigate()
-  const courses = getCourses()
+  const { data: courses = [] } = useData(() => api.getCourses())
 
   return (
     <div className="subjects-page page-enter">

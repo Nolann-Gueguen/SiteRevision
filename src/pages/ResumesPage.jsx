@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
-import { getCourses, SUBJECTS } from '../utils/storage'
+import { SUBJECTS } from '../utils/storage'
+import { api } from '../api'
+import { useData } from '../hooks/useData'
 import SubjectIcon from '../components/SubjectIcon'
 import { ChevronDown, ChevronRight, BookOpen, FileText } from 'lucide-react'
 import './ResumesPage.css'
@@ -43,11 +45,10 @@ function SubjectResume({ subject, courses }) {
 }
 
 export default function ResumesPage() {
-  const courses = getCourses()
+  const { data: courses = [] } = useData(() => api.getCourses())
   const [filter, setFilter] = useState('')
 
   const filtered = filter ? courses.filter(c => c.subjectId === filter) : courses
-
   const hasContent = SUBJECTS.some(s => filtered.some(c => c.subjectId === s.id))
 
   return (
@@ -64,7 +65,7 @@ export default function ResumesPage() {
         >
           <option value="">Toutes les matières</option>
           {SUBJECTS.map(s => (
-            <option key={s.id} value={s.id}>{s.emoji} {s.label}</option>
+            <option key={s.id} value={s.id}>{s.label}</option>
           ))}
         </select>
       </div>

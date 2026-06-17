@@ -1,9 +1,3 @@
-const KEYS = {
-  courses: 'studyspace_courses',
-  folders: 'studyspace_folders',
-  flashcards: 'studyspace_flashcards',
-}
-
 export const SUBJECTS = [
   { id: 'perspective', label: 'Perspective', color: '#6c63ff', icon: 'Ruler' },
   { id: 'pao', label: 'PAO', color: '#ec4899', icon: 'Monitor' },
@@ -18,65 +12,6 @@ export const SUBJECTS = [
   { id: 'demarche-deco', label: 'Démarche Déco', color: '#f97316', icon: 'Palette' },
   { id: 'registre-deco', label: 'Registre Déco', color: '#a855f7', icon: 'BookMarked' },
 ]
-
-function load(key) {
-  try {
-    const raw = localStorage.getItem(key)
-    return raw ? JSON.parse(raw) : []
-  } catch { return [] }
-}
-
-function save(key, data) {
-  localStorage.setItem(key, JSON.stringify(data))
-}
-
-// Courses
-export function getCourses() { return load(KEYS.courses) }
-export function saveCourse(course) {
-  const courses = getCourses()
-  const idx = courses.findIndex(c => c.id === course.id)
-  if (idx >= 0) courses[idx] = course
-  else courses.push(course)
-  save(KEYS.courses, courses)
-}
-export function deleteCourse(id) {
-  const courses = getCourses().filter(c => c.id !== id)
-  save(KEYS.courses, courses)
-  // Also delete related flashcards
-  const flashcards = getFlashcards().filter(f => f.courseId !== id)
-  save(KEYS.flashcards, flashcards)
-}
-
-// Folders
-export function getFolders() { return load(KEYS.folders) }
-export function saveFolder(folder) {
-  const folders = getFolders()
-  const idx = folders.findIndex(f => f.id === folder.id)
-  if (idx >= 0) folders[idx] = folder
-  else folders.push(folder)
-  save(KEYS.folders, folders)
-}
-export function deleteFolder(id) {
-  const folders = getFolders().filter(f => f.id !== id)
-  save(KEYS.folders, folders)
-  // Move courses out of deleted folder
-  const courses = getCourses().map(c => c.folderId === id ? { ...c, folderId: null } : c)
-  save(KEYS.courses, courses)
-}
-
-// Flashcards
-export function getFlashcards() { return load(KEYS.flashcards) }
-export function saveFlashcard(fc) {
-  const flashcards = getFlashcards()
-  const idx = flashcards.findIndex(f => f.id === fc.id)
-  if (idx >= 0) flashcards[idx] = fc
-  else flashcards.push(fc)
-  save(KEYS.flashcards, flashcards)
-}
-export function deleteFlashcard(id) {
-  const flashcards = getFlashcards().filter(f => f.id !== id)
-  save(KEYS.flashcards, flashcards)
-}
 
 export function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2)

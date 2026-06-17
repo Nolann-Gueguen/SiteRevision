@@ -216,22 +216,45 @@
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.login-hint {
-  margin-top: 28px;
-  padding: 14px 16px;
+.login-tabs {
+  display: flex;
+  gap: 4px;
   background: var(--bg3);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  font-size: 0.8rem;
-  color: var(--text2);
-  line-height: 1.8;
+  padding: 4px;
+  margin-bottom: 24px;
 }
-.login-hint code {
-  color: var(--accent2);
-  background: rgba(108,99,255,0.1);
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 0.8rem;
+
+.login-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 12px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: var(--text2);
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.login-tab:hover { color: var(--text); }
+.login-tab.active {
+  background: var(--bg2);
+  color: var(--text);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+.field-hint {
+  font-size: 0.75rem;
+  color: var(--text2);
+  font-weight: 400;
+  margin-left: 4px;
 }
 
 @media (max-width: 768px) {

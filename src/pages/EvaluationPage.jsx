@@ -1,9 +1,8 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  getFlashcards, saveFlashcard, deleteFlashcard,
-  SUBJECTS, generateId
-} from '../utils/storage'
+import { SUBJECTS, generateId } from '../utils/storage'
+import { api } from '../api'
+import { useData } from '../hooks/useData'
 import {
   Plus, Pencil, Trash2, ChevronDown, ChevronRight,
   X, Check, RotateCcw, Brain
@@ -78,7 +77,7 @@ function EditModal({ fc, onSave, onClose }) {
             <select value={subjectId} onChange={e => setSubjectId(e.target.value)}>
               <option value="">— Aucune —</option>
               {SUBJECTS.map(s => (
-                <option key={s.id} value={s.id}>{s.emoji} {s.label}</option>
+                <option key={s.id} value={s.id}>{s.label}</option>
               ))}
             </select>
           </div>
@@ -145,19 +144,25 @@ function SubjectGroup({ subject, cards, onEdit, onDelete }) {
 
 export default function EvaluationPage() {
   const navigate = useNavigate()
-  const [refresh, setRefresh] = useState(0)
   const [editingFc, setEditingFc] = useState(null)
   const [showModal, setShowModal] = useState(false)
   const [filter, setFilter] = useState('')
 
-  const flashcards = getFlashcards()
-  const reload = () => setRefresh(r => r + 1)
+  const { data: flashcards = [], reload } = useData(() => api.getFlashcards())
 
-  const handleDelete = (id) => {
-    if (confirm('Supprimer cette carte ?')) { deleteFlashcard(id); reload() }
+  const handleDelete = async (id) => {
+    if (confirm('Supprimer cette carte ?')) {
+      await api.deleteFlashcard(id)
+      reload()
+    }
   }
   const handleEdit = (fc) => { setEditingFc(fc); setShowModal(true) }
-  const handleSave = (fc) => { saveFlashcard(fc); setShowModal(false); setEditingFc(null); reload() }
+  const handleSave = async (fc) => {
+    await api.saveFlashcard(fc)
+    setShowModal(false)
+    setEditingFc(null)
+    reload()
+  }
 
   const filtered = filter ? flashcards.filter(fc => fc.subjectId === filter) : flashcards
   const grouped = SUBJECTS.map(s => ({ subject: s, cards: filtered.filter(fc => fc.subjectId === s.id) })).filter(g => g.cards.length > 0)
@@ -173,7 +178,7 @@ export default function EvaluationPage() {
         <div className="eval-header-right">
           <select className="eval-filter" value={filter} onChange={e => setFilter(e.target.value)}>
             <option value="">Toutes les matières</option>
-            {SUBJECTS.map(s => <option key={s.id} value={s.id}>{s.emoji} {s.label}</option>)}
+            {SUBJECTS.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
           </select>
           <button className="btn-primary" onClick={() => { setEditingFc(null); setShowModal(true) }}>
             <Plus size={16} /> Nouvelle carte

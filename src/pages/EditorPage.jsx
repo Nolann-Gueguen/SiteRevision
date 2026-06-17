@@ -8,10 +8,9 @@ import Underline from '@tiptap/extension-underline'
 import TextAlign from '@tiptap/extension-text-align'
 import { Color } from '@tiptap/extension-color'
 import { TextStyle } from '@tiptap/extension-text-style'
-import {
-  getCourses, saveCourse, getFlashcards, saveFlashcard,
-  generateFlashcardFromCourse, generateId, getFolders, SUBJECTS
-} from '../utils/storage'
+import { SUBJECTS, generateId, generateFlashcardFromCourse } from '../utils/storage'
+import { api } from '../api'
+import { useData } from '../hooks/useData'
 import {
   Bold, Italic, UnderlineIcon, Strikethrough,
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
@@ -38,7 +37,7 @@ const TEXT_COLORS = [
   '#84cc16', '#f97316', '#06b6d4', '#8b5cf6',
 ]
 
-function ColorPicker({ colors, onSelect, type = 'bg' }) {
+function ColorPicker({ colors, onSelect }) {
   return (
     <div className="color-picker-grid">
       {colors.map(c => (
@@ -85,17 +84,11 @@ export default function EditorPage() {
   const [folderId, setFolderId] = useState('')
   const [saved, setSaved] = useState(false)
   const [flashcardCreated, setFlashcardCreated] = useState(false)
+  const [courseLoaded, setCourseLoaded] = useState(false)
+  const existingCourseRef = useRef(null)
 
-  const existingCourse = courseId ? getCourses().find(c => c.id === courseId) : null
-  const availableFolders = getFolders().filter(f => f.subjectId === subjectId)
-
-  useEffect(() => {
-    if (existingCourse) {
-      setTitle(existingCourse.title || '')
-      setSubjectId(existingCourse.subjectId || '')
-      setFolderId(existingCourse.folderId || '')
-    }
-  }, [courseId])
+  const { data: allFolders = [] } = useData(() => api.getFolders(subjectId || null), [subjectId])
+  const availableFolders = allFolders.filter(f => f.subjectId === subjectId)
 
   const editor = useEditor({
     extensions: [
@@ -107,7 +100,7 @@ export default function EditorPage() {
       Image.configure({ inline: false, allowBase64: true }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
     ],
-    content: existingCourse?.content || '<p>Commencez à écrire votre cours ici...</p>',
+    content: '<p>Commencez à écrire votre cours ici...</p>',
     editorProps: {
       attributes: {
         class: 'tiptap-editor',
@@ -116,42 +109,58 @@ export default function EditorPage() {
     },
   })
 
-  const handleSave = useCallback(() => {
+  useEffect(() => {
+    if (!courseId || !editor) return
+    api.getCourse(courseId).then(course => {
+      existingCourseRef.current = course
+      setTitle(course.title || '')
+      setSubjectId(course.subjectId || '')
+      setFolderId(course.folderId || '')
+      editor.commands.setContent(course.content || '')
+      setCourseLoaded(true)
+    }).catch(() => setCourseLoaded(true))
+  }, [courseId, editor])
+
+  const handleSave = useCallback(async () => {
     if (!editor) return
+    const existing = existingCourseRef.current
     const course = {
       id: courseId || generateId(),
       title: title || 'Sans titre',
       subjectId,
       folderId: folderId || null,
       content: editor.getHTML(),
-      createdAt: existingCourse?.createdAt || Date.now(),
+      createdAt: existing?.createdAt || Date.now(),
       updatedAt: Date.now(),
-      order: existingCourse?.order ?? 0,
+      order: existing?.order ?? 0,
     }
-    saveCourse(course)
+    await api.saveCourse(course)
+    existingCourseRef.current = course
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
-  }, [editor, title, subjectId, folderId, courseId, existingCourse])
+  }, [editor, title, subjectId, folderId, courseId])
 
-  const handleValidate = useCallback(() => {
+  const handleValidate = useCallback(async () => {
     if (!editor) return
+    const existing = existingCourseRef.current
+    const id = courseId || generateId()
     const course = {
-      id: courseId || generateId(),
+      id,
       title: title || 'Sans titre',
       subjectId,
       folderId: folderId || null,
       content: editor.getHTML(),
-      createdAt: existingCourse?.createdAt || Date.now(),
+      createdAt: existing?.createdAt || Date.now(),
       updatedAt: Date.now(),
-      order: existingCourse?.order ?? 0,
+      order: existing?.order ?? 0,
     }
-    saveCourse(course)
+    await api.saveCourse(course)
 
-    // Generate or update flashcard
-    const existing = getFlashcards().find(f => f.courseId === course.id)
+    const flashcards = await api.getFlashcards()
+    const existingFc = flashcards.find(f => f.courseId === id)
     const fc = generateFlashcardFromCourse(course)
-    if (existing) fc.id = existing.id
-    saveFlashcard(fc)
+    if (existingFc) fc.id = existingFc.id
+    await api.saveFlashcard(fc)
 
     setFlashcardCreated(true)
     setTimeout(() => {
@@ -159,7 +168,7 @@ export default function EditorPage() {
       if (subjectId) navigate(`/matieres/${subjectId}`)
       else navigate('/matieres')
     }, 2000)
-  }, [editor, title, subjectId, folderId, courseId, existingCourse, navigate])
+  }, [editor, title, subjectId, folderId, courseId, navigate])
 
   const insertImage = (e) => {
     const file = e.target.files[0]
@@ -207,7 +216,7 @@ export default function EditorPage() {
           <select value={subjectId} onChange={e => { setSubjectId(e.target.value); setFolderId('') }}>
             <option value="">— Sélectionner une matière —</option>
             {SUBJECTS.map(s => (
-              <option key={s.id} value={s.id}>{s.emoji} {s.label}</option>
+              <option key={s.id} value={s.id}>{s.label}</option>
             ))}
           </select>
         </div>
@@ -226,12 +235,10 @@ export default function EditorPage() {
 
       <div className="editor-wrapper">
         <div className="editor-toolbar">
-          {/* History */}
           <button className="toolbar-btn" onClick={() => editor.chain().focus().undo().run()} title="Annuler"><Undo size={16} /></button>
           <button className="toolbar-btn" onClick={() => editor.chain().focus().redo().run()} title="Rétablir"><Redo size={16} /></button>
           <div className="toolbar-sep" />
 
-          {/* Headings */}
           <button className={`toolbar-btn ${editor.isActive('heading', { level: 1 }) ? 'active' : ''}`}
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} title="Titre 1">
             <Heading1 size={16} />
@@ -246,7 +253,6 @@ export default function EditorPage() {
           </button>
           <div className="toolbar-sep" />
 
-          {/* Format */}
           <button className={`toolbar-btn ${editor.isActive('bold') ? 'active' : ''}`}
             onClick={() => editor.chain().focus().toggleBold().run()} title="Gras">
             <Bold size={16} />
@@ -265,22 +271,19 @@ export default function EditorPage() {
           </button>
           <div className="toolbar-sep" />
 
-          {/* Text Color */}
           <ToolbarDropdown trigger={<><Type size={16} /><ChevronDown size={12} /></>}>
             <div className="dropdown-label">Couleur du texte</div>
-            <ColorPicker colors={TEXT_COLORS} onSelect={c => editor.chain().focus().setColor(c).run()} type="text" />
+            <ColorPicker colors={TEXT_COLORS} onSelect={c => editor.chain().focus().setColor(c).run()} />
             <button className="dropdown-clear" onClick={() => editor.chain().focus().unsetColor().run()}>
               Réinitialiser
             </button>
           </ToolbarDropdown>
 
-          {/* Highlight */}
           <ToolbarDropdown trigger={<><Highlighter size={16} /><ChevronDown size={12} /></>}>
             <div className="dropdown-label">Surlignage</div>
             <ColorPicker
               colors={HIGHLIGHT_COLORS}
               onSelect={c => editor.chain().focus().toggleHighlight({ color: c }).run()}
-              type="bg"
             />
             <button className="dropdown-clear" onClick={() => editor.chain().focus().unsetHighlight().run()}>
               Effacer
@@ -288,7 +291,6 @@ export default function EditorPage() {
           </ToolbarDropdown>
           <div className="toolbar-sep" />
 
-          {/* Align */}
           <button className={`toolbar-btn ${editor.isActive({ textAlign: 'left' }) ? 'active' : ''}`}
             onClick={() => editor.chain().focus().setTextAlign('left').run()} title="Gauche">
             <AlignLeft size={16} />
@@ -307,7 +309,6 @@ export default function EditorPage() {
           </button>
           <div className="toolbar-sep" />
 
-          {/* Lists */}
           <button className={`toolbar-btn ${editor.isActive('bulletList') ? 'active' : ''}`}
             onClick={() => editor.chain().focus().toggleBulletList().run()} title="Liste à puces">
             <List size={16} />
@@ -326,7 +327,6 @@ export default function EditorPage() {
           </button>
           <div className="toolbar-sep" />
 
-          {/* Image */}
           <button className="toolbar-btn" onClick={() => fileInputRef.current?.click()} title="Insérer une image">
             <ImageIcon size={16} />
           </button>

@@ -7,10 +7,9 @@ import {
   SortableContext, useSortable, verticalListSortingStrategy, arrayMove
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import {
-  SUBJECTS, getCourses, saveCourse, deleteCourse,
-  getFolders, saveFolder, deleteFolder, generateId
-} from '../utils/storage'
+import { SUBJECTS, generateId } from '../utils/storage'
+import { api } from '../api'
+import { useData } from '../hooks/useData'
 import {
   Plus, FolderPlus, Folder, FolderOpen, FileText,
   GripVertical, Pencil, Trash2, ChevronRight, ChevronDown, ArrowLeft
@@ -109,16 +108,19 @@ export default function SubjectDetailPage() {
   const { subjectId } = useParams()
   const navigate = useNavigate()
   const subject = SUBJECTS.find(s => s.id === subjectId)
-  const [refresh, setRefresh] = useState(0)
-  const reload = () => setRefresh(r => r + 1)
 
-  const courses = getCourses().filter(c => c.subjectId === subjectId)
-  const folders = getFolders().filter(f => f.subjectId === subjectId)
+  const { data: allCourses = [], reload: reloadCourses } = useData(() => api.getCourses())
+  const { data: allFolders = [], reload: reloadFolders } = useData(() => api.getFolders(subjectId))
+
+  const courses = allCourses.filter(c => c.subjectId === subjectId)
+  const folders = allFolders
   const rootCourses = courses.filter(c => !c.folderId)
+
+  const reload = () => { reloadCourses(); reloadFolders() }
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
-  const handleDragEnd = useCallback((event, folderId = null) => {
+  const handleDragEnd = useCallback(async (event, folderId = null) => {
     const { active, over } = event
     if (!over || active.id === over.id) return
     const list = folderId
@@ -127,35 +129,35 @@ export default function SubjectDetailPage() {
     const oldIdx = list.findIndex(c => c.id === active.id)
     const newIdx = list.findIndex(c => c.id === over.id)
     const reordered = arrayMove(list, oldIdx, newIdx)
-    reordered.forEach((c, i) => saveCourse({ ...c, order: i }))
-    reload()
+    await Promise.all(reordered.map((c, i) => api.saveCourse({ ...c, order: i })))
+    reloadCourses()
   }, [courses, rootCourses])
 
-  const handleDeleteCourse = (id) => {
+  const handleDeleteCourse = async (id) => {
     if (confirm('Supprimer ce cours ? La flashcard associée sera aussi supprimée.')) {
-      deleteCourse(id)
-      reload()
+      await api.deleteCourse(id)
+      reloadCourses()
     }
   }
 
-  const handleDeleteFolder = (id) => {
+  const handleDeleteFolder = async (id) => {
     if (confirm('Supprimer ce dossier ? Les cours seront déplacés à la racine.')) {
-      deleteFolder(id)
+      await api.deleteFolder(id)
       reload()
     }
   }
 
-  const handleRenameFolder = (id, name) => {
+  const handleRenameFolder = async (id, name) => {
     const folder = folders.find(f => f.id === id)
-    saveFolder({ ...folder, name })
-    reload()
+    await api.saveFolder({ ...folder, name })
+    reloadFolders()
   }
 
-  const addFolder = () => {
+  const addFolder = async () => {
     const name = prompt('Nom du dossier :')
     if (name?.trim()) {
-      saveFolder({ id: generateId(), name: name.trim(), subjectId, order: folders.length })
-      reload()
+      await api.saveFolder({ id: generateId(), name: name.trim(), subjectId, order: folders.length })
+      reloadFolders()
     }
   }
 

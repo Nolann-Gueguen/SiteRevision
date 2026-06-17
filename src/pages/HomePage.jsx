@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getCourses, getFlashcards, SUBJECTS } from '../utils/storage'
+import { SUBJECTS } from '../utils/storage'
+import { api } from '../api'
+import { useData } from '../hooks/useData'
 import { useAuth } from '../context/AuthContext'
 import SubjectIcon from '../components/SubjectIcon'
 import { Plus, ArrowRight, Clock, Brain, FileText } from 'lucide-react'
@@ -18,17 +20,17 @@ function timeAgo(ts) {
 
 function greeting(name) {
   const h = new Date().getHours()
-  if (h < 6) return `Nuit blanche, ${name} ? 🌙`
-  if (h < 12) return `Bonne matinée, ${name} ☀️`
-  if (h < 18) return `Bon après-midi, ${name} 👋`
-  return `Bonsoir, ${name} 🌆`
+  if (h < 6) return `Nuit blanche, ${name} ?`
+  if (h < 12) return `Bonne matinée, ${name}`
+  if (h < 18) return `Bon après-midi, ${name}`
+  return `Bonsoir, ${name}`
 }
 
 export default function HomePage() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const courses = getCourses()
-  const flashcards = getFlashcards()
+  const { data: courses = [] } = useData(() => api.getCourses())
+  const { data: flashcards = [] } = useData(() => api.getFlashcards())
 
   const recent = useMemo(
     () => [...courses].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 6),
@@ -42,8 +44,6 @@ export default function HomePage() {
 
   return (
     <div className="home page-enter">
-
-      {/* Header perso */}
       <div className="home-top">
         <div className="home-greeting">
           <p className="greeting-text">{greeting(user)}</p>
@@ -58,7 +58,6 @@ export default function HomePage() {
         </button>
       </div>
 
-      {/* Stats */}
       {courses.length > 0 && (
         <div className="home-stats">
           <div className="stat-item" onClick={() => navigate('/matieres')}>
@@ -79,7 +78,6 @@ export default function HomePage() {
       )}
 
       <div className="home-grid">
-        {/* Cours récents */}
         {recent.length > 0 && (
           <section className="home-section">
             <div className="home-section-header">
@@ -115,7 +113,6 @@ export default function HomePage() {
           </section>
         )}
 
-        {/* Matières actives */}
         {activeSubjects.length > 0 && (
           <section className="home-section">
             <div className="home-section-header">
@@ -149,11 +146,12 @@ export default function HomePage() {
         )}
       </div>
 
-      {/* Raccourcis révision */}
       {courses.length > 0 && (
         <div className="home-shortcuts">
           <button className="shortcut-card" onClick={() => navigate('/flashcards')}>
-            <div className="shortcut-icon" style={{ background: 'rgba(16,185,129,0.15)' }}>📋</div>
+            <div className="shortcut-icon" style={{ background: 'rgba(16,185,129,0.15)' }}>
+              <FileText size={22} color="#10b981" />
+            </div>
             <div>
               <div className="shortcut-title">Fiches de révision</div>
               <div className="shortcut-sub">Vue condensée par matière</div>
@@ -173,7 +171,6 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Empty state */}
       {courses.length === 0 && (
         <div className="home-empty">
           <p className="empty-sub">Par où commencer ?</p>
