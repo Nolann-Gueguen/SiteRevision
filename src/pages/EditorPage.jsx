@@ -78,6 +78,7 @@ export default function EditorPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const fileInputRef = useRef(null)
+  const sheetRef = useRef(null)
 
   const [title, setTitle] = useState('')
   const [subjectId, setSubjectId] = useState(searchParams.get('subject') || '')
@@ -85,10 +86,25 @@ export default function EditorPage() {
   const [saved, setSaved] = useState(false)
   const [flashcardCreated, setFlashcardCreated] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [downloading, setDownloading] = useState(false)
+  const [pageBreaks, setPageBreaks] = useState([])
   const [courseLoaded, setCourseLoaded] = useState(false)
   const existingCourseRef = useRef(null)
-  // ID stable pour les nouveaux cours — ne change pas entre les renders
   const stableNewId = useRef(generateId())
+
+  // Surveille la hauteur de la feuille et calcule les sauts de page
+  useEffect(() => {
+    if (!sheetRef.current) return
+    const PX_PER_MM = 96 / 25.4
+    const PAGE_H_MM = 297
+    const obs = new ResizeObserver(() => {
+      const hMm = sheetRef.current.offsetHeight / PX_PER_MM
+      const pages = Math.max(1, Math.ceil(hMm / PAGE_H_MM))
+      setPageBreaks(Array.from({ length: pages - 1 }, (_, i) => (i + 1) * PAGE_H_MM))
+    })
+    obs.observe(sheetRef.current)
+    return () => obs.disconnect()
+  }, [])
 
   const { data: allFolders = [] } = useData(() => api.getFolders(subjectId || null), [subjectId])
   const availableFolders = allFolders.filter(f => f.subjectId === subjectId)
@@ -179,6 +195,56 @@ export default function EditorPage() {
     }, 2000)
   }, [editor, title, subjectId, folderId, courseId, saving, navigate])
 
+  const downloadPDF = async () => {
+    if (downloading || !sheetRef.current) return
+    setDownloading(true)
+    try {
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ])
+      const el = sheetRef.current
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        scrollY: 0,
+        windowWidth: el.scrollWidth,
+        windowHeight: el.scrollHeight,
+      })
+
+      const A4_W = 210
+      const A4_H = 297
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+      const imgW = A4_W
+      const imgH = (canvas.height * A4_W) / canvas.width
+      let yPos = 0
+      let remaining = imgH
+
+      while (remaining > 0) {
+        const srcY = (yPos / imgH) * canvas.height
+        const srcH = Math.min((A4_H / imgH) * canvas.height, canvas.height - srcY)
+        const pageCanvas = document.createElement('canvas')
+        pageCanvas.width = canvas.width
+        pageCanvas.height = srcH
+        const ctx = pageCanvas.getContext('2d')
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height)
+        ctx.drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH)
+        const pageImg = pageCanvas.toDataURL('image/jpeg', 0.95)
+        const pageH = Math.min(A4_H, remaining)
+        if (yPos > 0) pdf.addPage()
+        pdf.addImage(pageImg, 'JPEG', 0, 0, imgW, pageH)
+        yPos += A4_H
+        remaining -= A4_H
+      }
+
+      pdf.save(`${title || 'cours'}.pdf`)
+    } finally {
+      setDownloading(false)
+    }
+  }
+
   const insertImage = (e) => {
     const file = e.target.files[0]
     if (!file || !editor) return
@@ -205,8 +271,8 @@ export default function EditorPage() {
           onChange={e => setTitle(e.target.value)}
         />
         <div className="editor-topbar-actions">
-          <button className="btn-pdf" onClick={() => window.print()} title="Télécharger en PDF">
-            <FileDown size={16} /> PDF
+          <button className="btn-pdf" onClick={downloadPDF} disabled={downloading} title="Télécharger en PDF">
+            <FileDown size={16} /> {downloading ? 'Export…' : 'PDF'}
           </button>
           <button className={`btn-save ${saved ? 'saved' : ''}`} onClick={handleSave} disabled={saving}>
             <Save size={16} />
@@ -353,7 +419,10 @@ export default function EditorPage() {
         </div>
 
         <div className="editor-desktop">
-          <div className="editor-page-sheet" id="print-area">
+          <div className="editor-page-sheet" id="print-area" ref={sheetRef}>
+            {pageBreaks.map(mmPos => (
+              <div key={mmPos} className="editor-page-break" style={{ top: `${mmPos}mm` }} />
+            ))}
             <EditorContent editor={editor} className="editor-area" />
           </div>
         </div>
