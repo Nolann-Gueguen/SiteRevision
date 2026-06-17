@@ -211,6 +211,8 @@ export default function EditorPage() {
         scrollY: 0,
         windowWidth: el.scrollWidth,
         windowHeight: el.scrollHeight,
+        // Exclure les séparateurs de page du rendu PDF
+        ignoreElements: node => node.classList?.contains('editor-page-break'),
       })
 
       const A4_W = 210
@@ -419,9 +421,19 @@ export default function EditorPage() {
         </div>
 
         <div className="editor-desktop">
-          <div className="editor-page-sheet" id="print-area" ref={sheetRef}>
-            {pageBreaks.map(mmPos => (
-              <div key={mmPos} className="editor-page-break" style={{ top: `${mmPos}mm` }} />
+          <div
+            className="editor-page-sheet"
+            id="print-area"
+            ref={sheetRef}
+            style={{ minHeight: `${(pageBreaks.length + 1) * 297}mm` }}
+          >
+            {pageBreaks.map((mmPos, i) => (
+              <div
+                key={mmPos}
+                className="editor-page-break"
+                style={{ top: `${mmPos}mm` }}
+                data-page={`Page ${i + 2}`}
+              />
             ))}
             <EditorContent editor={editor} className="editor-area" />
           </div>

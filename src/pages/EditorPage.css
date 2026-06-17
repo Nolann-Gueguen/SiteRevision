@@ -251,7 +251,7 @@
   background: #ffffff;
   width: 210mm;
   max-width: 100%;
-  min-height: 297mm;
+  min-height: 297mm; /* écrasé par le style inline dynamique */
   padding: 25mm 22mm 30mm;
   box-shadow:
     0 2px 8px rgba(0,0,0,0.25),
@@ -263,29 +263,43 @@
 /* Séparateur visuel entre pages */
 .editor-page-break {
   position: absolute;
-  left: -24px;
-  right: -24px;
-  height: 16px;
-  background: #23262f;
+  left: 0;
+  right: 0;
+  height: 24px;
   pointer-events: none;
   z-index: 10;
-  display: flex;
-  align-items: center;
+  /* Ombre en haut et en bas pour simuler la fin/début de page */
+  background:
+    linear-gradient(to bottom, rgba(0,0,0,0.10) 0, transparent 8px),
+    linear-gradient(to top, rgba(0,0,0,0.10) 0, transparent 8px);
 }
-.editor-page-break::before,
-.editor-page-break::after {
+/* Ligne de séparation centrale visible */
+.editor-page-break::before {
   content: '';
   position: absolute;
+  top: 50%;
   left: 0; right: 0;
-  height: 4px;
+  height: 2px;
+  transform: translateY(-50%);
+  background: repeating-linear-gradient(
+    to right,
+    #9ca3af 0, #9ca3af 8px,
+    transparent 8px, transparent 16px
+  );
 }
-.editor-page-break::before {
-  top: 0;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.18), transparent);
-}
+/* Label "Page X" dans la marge droite */
 .editor-page-break::after {
-  bottom: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.18), transparent);
+  content: attr(data-page);
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: #9ca3af;
+  font-family: system-ui, sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
 }
 
 /* Contenu de l'éditeur sur fond blanc */
