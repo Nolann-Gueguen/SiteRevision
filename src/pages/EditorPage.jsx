@@ -16,7 +16,7 @@ import {
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
   Highlighter, ImageIcon, Heading1, Heading2, Heading3,
   List, ListOrdered, Quote, Undo, Redo, Save, CheckSquare,
-  ChevronDown, ArrowLeft, Type, Minus, Folder
+  ChevronDown, ArrowLeft, Type, Minus, Folder, FileDown
 } from 'lucide-react'
 import './EditorPage.css'
 
@@ -205,6 +205,9 @@ export default function EditorPage() {
           onChange={e => setTitle(e.target.value)}
         />
         <div className="editor-topbar-actions">
+          <button className="btn-pdf" onClick={() => window.print()} title="Télécharger en PDF">
+            <FileDown size={16} /> PDF
+          </button>
           <button className={`btn-save ${saved ? 'saved' : ''}`} onClick={handleSave} disabled={saving}>
             <Save size={16} />
             {saving ? '…' : saved ? 'Sauvegardé !' : 'Sauvegarder'}
@@ -349,7 +352,11 @@ export default function EditorPage() {
           />
         </div>
 
-        <EditorContent editor={editor} className="editor-area" />
+        <div className="editor-desktop">
+          <div className="editor-page-sheet" id="print-area">
+            <EditorContent editor={editor} className="editor-area" />
+          </div>
+        </div>
       </div>
     </div>
   )
