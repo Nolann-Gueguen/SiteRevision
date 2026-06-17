@@ -1,0 +1,196 @@
+.resumes-page {
+  padding: 40px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.resumes-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 36px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.page-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem;
+  margin-bottom: 6px;
+}
+.page-sub { color: var(--text2); font-size: 0.92rem; }
+
+.resume-filter {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 9px 14px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+  cursor: pointer;
+}
+.resume-filter:focus { border-color: var(--accent); }
+
+.resumes-content {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.resume-subject {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.resume-subject-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 22px;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.2s;
+}
+.resume-subject-header:hover { background: var(--bg3); }
+
+.resume-subject-icon {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.resume-subject-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  flex: 1;
+}
+.resume-subject-count {
+  font-size: 0.75rem;
+  color: var(--text2);
+  background: var(--bg3);
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+}
+.resume-chevron { color: var(--text2); flex-shrink: 0; }
+
+.resume-courses {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.resume-course-card {
+  background: var(--bg3);
+  border-radius: 12px;
+  padding: 20px 22px;
+  border-left: 3px solid var(--border-color, var(--accent));
+  transition: box-shadow 0.2s;
+}
+.resume-course-card:hover {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.resume-course-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.resume-course-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Render TipTap HTML */
+.tiptap-render {
+  font-size: 0.9rem;
+  line-height: 1.75;
+  color: var(--text2);
+}
+.tiptap-render h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem;
+  color: var(--text);
+  margin: 1.2em 0 0.5em;
+}
+.tiptap-render h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 1em 0 0.4em;
+}
+.tiptap-render h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0.8em 0 0.3em;
+}
+.tiptap-render p { margin-bottom: 0.6em; }
+.tiptap-render strong { font-weight: 700; color: var(--text); }
+.tiptap-render em { font-style: italic; }
+.tiptap-render u { text-decoration: underline; }
+.tiptap-render s { text-decoration: line-through; }
+.tiptap-render ul, .tiptap-render ol {
+  padding-left: 22px;
+  margin-bottom: 0.6em;
+}
+.tiptap-render li { margin-bottom: 0.25em; }
+.tiptap-render blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 14px;
+  color: var(--text2);
+  font-style: italic;
+  margin: 0.8em 0;
+}
+.tiptap-render hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1em 0;
+}
+.tiptap-render img {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 8px 0;
+}
+.tiptap-render mark {
+  border-radius: 3px;
+  padding: 0 2px;
+}
+
+.resumes-empty {
+  text-align: center;
+  padding: 80px 40px;
+  background: var(--bg2);
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  color: var(--text2);
+}
+.resumes-empty h3 { font-size: 1.2rem; color: var(--text); }
+
+@media (max-width: 768px) {
+  .resumes-page { padding: 24px 16px; }
+  .resume-subject-header { padding: 14px 16px; }
+  .resume-courses { padding: 14px; }
+  .resume-course-card { padding: 16px; }
+}

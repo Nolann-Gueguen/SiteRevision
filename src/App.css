@@ -1,0 +1,25 @@
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.app-main {
+  flex: 1;
+  margin-left: 230px;
+  min-height: 100vh;
+  background: var(--bg);
+  overflow-x: hidden;
+}
+
+.page-loading {
+  padding: 60px 40px;
+  color: var(--text2);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .app-main {
+    margin-left: 0;
+    padding-top: 60px;
+  }
+}

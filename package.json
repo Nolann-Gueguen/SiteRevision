@@ -1,0 +1,44 @@
+{
+  "name": "siterevision",
+  "version": "1.0.0",
+  "description": "Site pour y mettre les révisions",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nolann-Gueguen/SiteRevision.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/Nolann-Gueguen/SiteRevision/issues"
+  },
+  "homepage": "https://github.com/Nolann-Gueguen/SiteRevision#readme",
+  "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@tiptap/extension-color": "^3.27.0",
+    "@tiptap/extension-highlight": "^3.27.0",
+    "@tiptap/extension-image": "^3.27.0",
+    "@tiptap/extension-text-align": "^3.27.0",
+    "@tiptap/extension-text-style": "^3.27.0",
+    "@tiptap/extension-underline": "^3.27.0",
+    "@tiptap/react": "^3.27.0",
+    "@tiptap/starter-kit": "^3.27.0",
+    "lucide-react": "^1.20.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-router-dom": "^7.18.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.0.2",
+    "vite": "^8.0.16"
+  }
+}
