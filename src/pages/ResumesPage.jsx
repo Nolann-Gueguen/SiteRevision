@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { SUBJECTS } from '../utils/storage'
+import { SUBJECTS, generateSummaryHTML } from '../utils/storage'
 import { api } from '../api'
 import { useData } from '../hooks/useData'
 import SubjectIcon from '../components/SubjectIcon'
@@ -34,7 +34,7 @@ function SubjectResume({ subject, courses }) {
               </div>
               <div
                 className="resume-course-content tiptap-render"
-                dangerouslySetInnerHTML={{ __html: course.content }}
+                dangerouslySetInnerHTML={{ __html: course.summary || generateSummaryHTML(course.content) }}
               />
             </div>
           ))}

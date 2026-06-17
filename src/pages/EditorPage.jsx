@@ -8,7 +8,7 @@ import Underline from '@tiptap/extension-underline'
 import TextAlign from '@tiptap/extension-text-align'
 import { Color } from '@tiptap/extension-color'
 import { TextStyle } from '@tiptap/extension-text-style'
-import { SUBJECTS, generateId, generateFlashcardFromCourse } from '../utils/storage'
+import { SUBJECTS, generateId, generateFlashcardFromCourse, generateSummaryHTML } from '../utils/storage'
 import { api } from '../api'
 import { useData } from '../hooks/useData'
 import {
@@ -84,8 +84,11 @@ export default function EditorPage() {
   const [folderId, setFolderId] = useState('')
   const [saved, setSaved] = useState(false)
   const [flashcardCreated, setFlashcardCreated] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [courseLoaded, setCourseLoaded] = useState(false)
   const existingCourseRef = useRef(null)
+  // ID stable pour les nouveaux cours — ne change pas entre les renders
+  const stableNewId = useRef(generateId())
 
   const { data: allFolders = [] } = useData(() => api.getFolders(subjectId || null), [subjectId])
   const availableFolders = allFolders.filter(f => f.subjectId === subjectId)
@@ -122,10 +125,12 @@ export default function EditorPage() {
   }, [courseId, editor])
 
   const handleSave = useCallback(async () => {
-    if (!editor) return
+    if (!editor || saving) return
+    setSaving(true)
     const existing = existingCourseRef.current
+    const id = courseId || stableNewId.current
     const course = {
-      id: courseId || generateId(),
+      id,
       title: title || 'Sans titre',
       subjectId,
       folderId: folderId || null,
@@ -136,20 +141,23 @@ export default function EditorPage() {
     }
     await api.saveCourse(course)
     existingCourseRef.current = course
+    setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
-  }, [editor, title, subjectId, folderId, courseId])
+  }, [editor, title, subjectId, folderId, courseId, saving])
 
   const handleValidate = useCallback(async () => {
-    if (!editor) return
+    if (!editor || saving) return
+    setSaving(true)
     const existing = existingCourseRef.current
-    const id = courseId || generateId()
+    const id = courseId || stableNewId.current
     const course = {
       id,
       title: title || 'Sans titre',
       subjectId,
       folderId: folderId || null,
       content: editor.getHTML(),
+      summary: generateSummaryHTML(editor.getHTML()),
       createdAt: existing?.createdAt || Date.now(),
       updatedAt: Date.now(),
       order: existing?.order ?? 0,
@@ -162,13 +170,14 @@ export default function EditorPage() {
     if (existingFc) fc.id = existingFc.id
     await api.saveFlashcard(fc)
 
+    setSaving(false)
     setFlashcardCreated(true)
     setTimeout(() => {
       setFlashcardCreated(false)
       if (subjectId) navigate(`/matieres/${subjectId}`)
       else navigate('/matieres')
     }, 2000)
-  }, [editor, title, subjectId, folderId, courseId, navigate])
+  }, [editor, title, subjectId, folderId, courseId, saving, navigate])
 
   const insertImage = (e) => {
     const file = e.target.files[0]
@@ -196,13 +205,14 @@ export default function EditorPage() {
           onChange={e => setTitle(e.target.value)}
         />
         <div className="editor-topbar-actions">
-          <button className={`btn-save ${saved ? 'saved' : ''}`} onClick={handleSave}>
+          <button className={`btn-save ${saved ? 'saved' : ''}`} onClick={handleSave} disabled={saving}>
             <Save size={16} />
-            {saved ? 'Sauvegardé !' : 'Sauvegarder'}
+            {saving ? '…' : saved ? 'Sauvegardé !' : 'Sauvegarder'}
           </button>
           <button
             className={`btn-validate ${flashcardCreated ? 'done' : ''}`}
             onClick={handleValidate}
+            disabled={saving}
           >
             <CheckSquare size={16} />
             {flashcardCreated ? 'Flashcard créée !' : 'Valider et créer flashcard'}

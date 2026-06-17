@@ -14,6 +14,9 @@ const db = new Database(DB_PATH)
 db.pragma('journal_mode = WAL')
 db.pragma('foreign_keys = ON')
 
+// Migration: add columns that may be missing from older DB versions
+try { db.exec(`ALTER TABLE courses ADD COLUMN summary TEXT DEFAULT ''`) } catch {}
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id       INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,6 +41,7 @@ db.exec(`
     subject_id TEXT    NOT NULL DEFAULT '',
     folder_id  TEXT    REFERENCES folders(id) ON DELETE SET NULL,
     content    TEXT    DEFAULT '',
+    summary    TEXT    DEFAULT '',
     ord        INTEGER DEFAULT 0,
     created_at INTEGER DEFAULT (unixepoch()),
     updated_at INTEGER DEFAULT (unixepoch())
@@ -76,8 +80,8 @@ function auth(req, res, next) {
 function mapCourse(c) {
   return {
     id: c.id, title: c.title, subjectId: c.subject_id,
-    folderId: c.folder_id, content: c.content, order: c.ord,
-    createdAt: c.created_at * 1000, updatedAt: c.updated_at * 1000,
+    folderId: c.folder_id, content: c.content, summary: c.summary || '',
+    order: c.ord, createdAt: c.created_at * 1000, updatedAt: c.updated_at * 1000,
   }
 }
 function mapFolder(f) {
@@ -130,16 +134,16 @@ app.get('/api/courses/:id', auth, (req, res) => {
 })
 
 app.post('/api/courses', auth, (req, res) => {
-  const { id, title, subjectId, folderId, content, order } = req.body
+  const { id, title, subjectId, folderId, content, summary, order } = req.body
   db.prepare(`
-    INSERT INTO courses (id, user_id, title, subject_id, folder_id, content, ord)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO courses (id, user_id, title, subject_id, folder_id, content, summary, ord)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
       title=excluded.title, subject_id=excluded.subject_id,
       folder_id=excluded.folder_id, content=excluded.content,
-      ord=excluded.ord, updated_at=unixepoch()
+      summary=excluded.summary, ord=excluded.ord, updated_at=unixepoch()
     WHERE courses.user_id = ?
-  `).run(id, req.user.id, title || '', subjectId || '', folderId || null, content || '', order || 0, req.user.id)
+  `).run(id, req.user.id, title || '', subjectId || '', folderId || null, content || '', summary || '', order || 0, req.user.id)
   res.json({ ok: true })
 })
 
