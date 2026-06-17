@@ -26,7 +26,12 @@ async function req(path, opts = {}) {
     throw new Error('Session expirée. Veuillez vous reconnecter.')
   }
 
-  const data = await res.json()
+  let data
+  try {
+    data = await res.json()
+  } catch {
+    throw new Error('Impossible de joindre le serveur. Vérifiez que le backend est démarré (npm run dev:all).')
+  }
   if (!res.ok) throw new Error(data.error || 'Erreur serveur')
   return data
 }
